@@ -22,7 +22,7 @@ class SliderExample extends React.Component<$FlowFixMeProps, $FlowFixMeState> {
 
   state = {
     value: this.props.value,
-  }
+  };
 
   ref = React.createRef();
 
