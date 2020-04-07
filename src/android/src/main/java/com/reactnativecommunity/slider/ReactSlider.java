@@ -10,7 +10,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.appcompat.widget.AppCompatSeekBar;
 
@@ -28,7 +31,7 @@ import javax.annotation.Nullable;
  *
  * <p>Note that the slider is _not_ a controlled component (setValue isn't called during dragging).
  */
-public class ReactSlider extends AppCompatSeekBar implements InformantTarget<ReactStylesDiffMap> {
+public class ReactSlider extends AppCompatSeekBar implements InformantTarget {
 
   /**
    * If step is 0 (unset) we default to this total number of steps. Don't use 100 which leads to
@@ -153,8 +156,25 @@ public class ReactSlider extends AppCompatSeekBar implements InformantTarget<Rea
   }
 
   @Override
-  public void receiveFromInformant(int informantID, int recruiterID, ReactStylesDiffMap context) {
-    drawableHelper.receiveFromInformant(informantID, recruiterID, context);
+  public void onReceiveProps(int recruiterID, View informant, ReactStylesDiffMap context) {
+    drawableHelper.onReceiveProps(recruiterID, informant, context);
+  }
+
+  @Override
+  public void onViewAdded(int recruiterID, ViewGroup parent, View view) {
+    Log.d("Sliderr", "onViewAdded: ");
+    drawableHelper.onViewAdded(recruiterID, parent, view);
+  }
+
+  @Override
+  public void onViewRemoved(int recruiterID, ViewGroup parent, View view) {
+    Log.d("Sliderr", "onViewRemoved: ");
+    drawableHelper.onViewRemoved(recruiterID, parent, view);
+  }
+
+  @Override
+  public void onViewInvalidated(int recruiterID, View view) {
+
   }
 
   @SuppressLint("ClickableViewAccessibility")

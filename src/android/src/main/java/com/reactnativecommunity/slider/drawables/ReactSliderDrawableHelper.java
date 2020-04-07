@@ -10,10 +10,12 @@ import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.IntDef;
 
 import com.facebook.react.uimanager.ReactStylesDiffMap;
+import com.reactnativecommunity.slider.ReactInformantViewManager;
 import com.reactnativecommunity.slider.ReactSlider;
 
 import java.lang.annotation.Retention;
@@ -24,9 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class ReactSliderDrawableHelper {
-
-  static final int MAX_LEVEL = 10000;
+public class ReactSliderDrawableHelper implements ReactInformantViewManager.InformantRegistry.InformantTarget {
 
   @IntDef({
       SliderDrawable.BACKGROUND,
@@ -116,7 +116,8 @@ public class ReactSliderDrawableHelper {
     mThumbDrawableHandler.onTouchEvent(event);
   }
 
-  public void receiveFromInformant(int informantID, int recruiterID, ReactStylesDiffMap context) {
+  @Override
+  public void onReceiveProps(int recruiterID, View informant, ReactStylesDiffMap context) {
     DrawableHandler[] handlers = new DrawableHandler[]{
         mBackgroundDrawableHandler,
         mMinimumTrackDrawableHandler,
@@ -125,17 +126,56 @@ public class ReactSliderDrawableHelper {
     for (DrawableHandler handler: handlers) {
       int id = handler.getView() != null ? handler.getView().getId() : View.NO_ID;
       if (id != View.NO_ID) {
-        if (id == informantID) {
+        if (id == informant.getId()) {
           handler.updateFromProps(0, context);
           //break;
         }
         if (id == recruiterID) {
-          handler.updateFromProps(informantID, context);
+          handler.updateFromProps(informant.getId(), context);
           //handler.dispatchDraw();
           break;
         }
       }
     }
+  }
+
+  @Override
+  public void onViewAdded(int recruiterID, ViewGroup parent, View view) {
+    DrawableHandler drawableHandler = findHandler(recruiterID);
+    if (drawableHandler != null) {
+      drawableHandler.onViewAdded(parent, view);
+    }
+  }
+
+  @Override
+  public void onViewRemoved(int recruiterID, ViewGroup parent, View view) {
+    DrawableHandler drawableHandler = findHandler(recruiterID);
+    if (drawableHandler != null) {
+      drawableHandler.onViewRemoved(parent, view);
+    }
+  }
+
+  @Override
+  public void onViewInvalidated(int recruiterID, View view) {
+    DrawableHandler drawableHandler = findHandler(recruiterID);
+    if (drawableHandler != null) {
+      drawableHandler.onViewInvalidated(view);
+    }
+  }
+
+  private DrawableHandler findHandler(int informantID) {
+    DrawableHandler[] handlers = new DrawableHandler[]{
+        mBackgroundDrawableHandler,
+        mMinimumTrackDrawableHandler,
+        mMaximumTrackDrawableHandler,
+        mThumbDrawableHandler};
+    for (DrawableHandler handler: handlers) {
+      int id = handler.getView() != null ? handler.getView().getId() : View.NO_ID;
+      if (id == informantID) {
+        return handler;
+      }
+    }
+    return null;
   }
 
   public void tearDown() {

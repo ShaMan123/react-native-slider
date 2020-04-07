@@ -131,7 +131,7 @@ public class ReactSliderManager extends SimpleViewManager<ReactSlider> {
       DrawableHandler handler = getDrawableHandler(receiver, type);
       View informant = handler.getView();
       if (informant != null) {
-        mInformantRegistry.remove(informant.getId());
+        mInformantRegistry.remove(informant);
       }
     }
   }
