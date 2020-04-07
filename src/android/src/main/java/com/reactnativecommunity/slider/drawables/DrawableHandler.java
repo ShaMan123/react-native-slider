@@ -1,13 +1,12 @@
 package com.reactnativecommunity.slider.drawables;
 
 import android.content.res.Resources;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.View;
-import android.view.ViewTreeObserver;
+import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
@@ -16,11 +15,11 @@ import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.react.uimanager.ReactStylesDiffMap;
 import com.facebook.react.uimanager.UIManagerModule;
 
-public abstract class DrawableHandler implements ViewTreeObserver.OnDrawListener, PropsUpdater {
+public abstract class DrawableHandler implements PropsUpdater {
+  static final int MAX_LEVEL = 10000;
   private final ReactContext mContext;
   private final Drawable mOriginal;
   private View mView;
-  private boolean mIsDrawing = false;
   boolean mSystemDrawable = true;
 
   DrawableHandler(ReactContext context, Drawable original) {
@@ -32,34 +31,19 @@ public abstract class DrawableHandler implements ViewTreeObserver.OnDrawListener
     return mContext.getResources();
   }
 
-  Drawable createDrawable(Resources res, Bitmap bitmap) {
-    return new ReactDrawable(res, bitmap, getView());
-  }
-
+  abstract Drawable createDrawable();
   abstract Drawable get();
   abstract void set(Drawable drawable);
-  abstract void draw(Canvas canvas, View view);
-
-  @Nullable
-  ReactDrawable getReactDrawable() {
-    return null;
-  }
+  abstract void onPreDraw(Canvas canvas);
 
   public final View getView() {
     return mView;
   }
 
-  @Override
-  public void onDraw() {
-    if (mView != null && !mIsDrawing && mView.isDirty()) {
-      draw();
-    }
-  }
-
   public final void setView(final int tag) {
     if (tag == View.NO_ID) {
       setView(null);
-    } else {
+    } else/* if (mView == null || mView.getId() != tag)*/{
       UiThreadUtil.runOnUiThread(new Runnable() {
         @Override
         public void run() {
@@ -71,15 +55,7 @@ public abstract class DrawableHandler implements ViewTreeObserver.OnDrawListener
     }
   }
 
-  final void setView(@Nullable View view) {
-    if (mView != view) {
-      if (mView != null) {
-        DrawListenerRegistry.unregisterListener(mView, this);
-      }
-      if (view != null) {
-        DrawListenerRegistry.registerListener(view, this);
-      }
-    }
+  private void setView(@Nullable View view) {
     mView = view;
     if (mView != null) {
       mSystemDrawable = false;
@@ -91,9 +67,7 @@ public abstract class DrawableHandler implements ViewTreeObserver.OnDrawListener
   }
 
   public final void tearDown() {
-    if (mView != null) {
-      DrawListenerRegistry.unregisterListener(mView, this);
-    }
+
   }
 
   /**
@@ -109,22 +83,16 @@ public abstract class DrawableHandler implements ViewTreeObserver.OnDrawListener
     return get().copyBounds();
   }
 
-  final void dispatchDraw() {
-    if (mView != null) draw();
-  }
-
   private synchronized void draw() {
-    mIsDrawing = true;
     Rect bounds = getBounds();
-    Bitmap bitmap = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888);
-    Canvas canvas = new Canvas(bitmap);
-    draw(canvas, mView);
-    Drawable outDrawable = createDrawable(mContext.getResources(), bitmap);
+    //Bitmap bitmap = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888);
+    //Canvas canvas = new Canvas(bitmap);
+    //draw(canvas, mView);
+    Drawable outDrawable = createDrawable();
     outDrawable.setState(get().getState());
     outDrawable.setLevel(get().getLevel());
     set(outDrawable);
     invalidate();
-    mIsDrawing = false;
   }
 
   private void restore() {
@@ -148,15 +116,34 @@ public abstract class DrawableHandler implements ViewTreeObserver.OnDrawListener
   @Override
   public void updateFromProps(int tag, ReactStylesDiffMap props) {
     if (props == null) return;
-    ReactDrawable drawable = getReactDrawable();
+    Drawable drawable = get();
     if (drawable == null) return;
     if (drawable instanceof ReactDrawableGroup.ReactRootDrawableGroup) {
       ((ReactDrawableGroup.ReactRootDrawableGroup) drawable).updateFromProps(tag, props);
-    } else if (tag == getView().getId()) {
-      drawable.updateFromProps(props);
-    } else {
-      // TODO: 06/04/2020 remove this once ReactDrawableGroup is ready -> 60fps!
-      dispatchDraw();
+    } else if (tag == getView().getId() && drawable instanceof ReactDrawable) {
+      ((ReactDrawable) drawable).updateFromProps(props);
     }
   }
+
+  void onViewAdded(ViewGroup parent, View view) {
+    Drawable drawable = get();
+    if (drawable instanceof ReactDrawableGroup.ReactRootDrawableGroup) {
+      ((ReactDrawableGroup.ReactRootDrawableGroup) drawable).addView(parent, view);
+    }
+  }
+
+  void onViewRemoved(ViewGroup parent, View view) {
+    Drawable drawable = get();
+    if (drawable instanceof ReactDrawableGroup.ReactRootDrawableGroup) {
+      ((ReactDrawableGroup.ReactRootDrawableGroup) drawable).removeView(parent, view);
+    }
+  }
+
+  void onViewInvalidated(View view) {
+    Drawable drawable = get();
+    if (drawable instanceof ReactDrawableGroup.ReactRootDrawableGroup) {
+      ((ReactDrawableGroup.ReactRootDrawableGroup) drawable).draw(view);
+    }
+  }
+
 }

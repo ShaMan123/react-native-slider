@@ -109,21 +109,22 @@ public class ReactDrawable extends LayerDrawable implements ReactTransformHelper
   }
 
   public PointF getCenter() {
-    Drawable drawable = getDrawable(0);
-    if (drawable instanceof DrawableCenter) {
-      return ((DrawableCenter) drawable).getCenter();
+    if (getNumberOfLayers() > 0 && getDrawable(0) instanceof  DrawableCenter) {
+      return ((DrawableCenter) getDrawable(0)).getCenter();
     } else {
       Rect bounds = getBounds();
       return new PointF(bounds.centerX(), bounds.centerY());
     }
   }
-
+/*
   @Override
   protected void onBoundsChange(Rect bounds) {
     for (int i = 0; i < getNumberOfLayers(); i++) {
       getDrawable(i).setBounds(bounds);
     }
   }
+
+ */
 
   void onPreDraw(Canvas canvas) {
     PointF center = getCenter();

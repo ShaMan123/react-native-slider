@@ -3,16 +3,22 @@ package com.reactnativecommunity.slider.drawables;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.facebook.react.uimanager.ReactStylesDiffMap;
 import com.facebook.react.views.view.ReactViewGroup;
@@ -31,6 +37,7 @@ public class ReactDrawableGroup extends ReactDrawable {
       super(builder);
       mRegistry = new SparseArray<>();
       traverseRegistration(this);
+      setBounds(getBounds());
     }
 
     void traverseRegistration(ReactDrawableGroup reactDrawable) {
@@ -84,10 +91,73 @@ public class ReactDrawableGroup extends ReactDrawable {
         }
       }
     }
+
+    void addView(ViewGroup parent, View view) {
+      ReactDrawableGroup parentDrawable = mRegistry.get(parent.getId());
+      if (parentDrawable != null) {
+        mRegistry.put(view.getId(), parentDrawable.addView(view));
+        layoutDrawableGroup(parentDrawable);
+      }
+    }
+
+    void removeView(ViewGroup parent, View view) {
+      ReactDrawableGroup parentDrawable = mRegistry.get(parent.getId());
+      if (parentDrawable != null) {
+        parentDrawable.removeView(view);
+        layoutDrawableGroup(parentDrawable);
+      }
+      mRegistry.remove(view.getId());
+    }
+
+    void draw(View view) {
+      traverseDrawing(view, true);
+    }
+/*
+    void draw(View view) {
+      draw(view, true);
+    }
+
+    void draw(View view, boolean layout) {
+      traverseDrawing(view);
+      if (layout) onBoundsChange(getBounds());
+      invalidateSelf();
+    }
+
+ */
+
+    private void traverseDrawing(View view, boolean layout) {
+      if (view instanceof ViewGroup) {
+        ViewGroup viewGroup = (ViewGroup) view;
+        for (int i = 0; i < viewGroup.getChildCount(); i++) {
+          traverseDrawing(viewGroup.getChildAt(i), false);
+        }
+      }
+      ReactDrawableGroup d = mRegistry.get(view.getId());
+      if (d != null) {
+        d.setBase(view);
+        if (layout) layoutDrawableGroup(d);
+      }
+    }
+
+    private void layoutDrawableGroup(ReactDrawableGroup reactDrawableGroup) {
+      onBoundsChange(getBounds());
+      reactDrawableGroup.invalidateSelf();
+    }
+
+    private ReactDrawableGroup getParent(View view) {
+      if (view.getParent() != null) {
+        int parentID = ((View) view.getParent()).getId();
+        return mRegistry.get(parentID);
+      } else {
+        return null;
+      }
+    }
+
   }
 
   private HashMap<View, ReactDrawableGroup> mDrawables;
   View mID;
+  @Nullable
   private Drawable mBaseDrawable;
 
   ReactDrawableGroup(Builder builder) {
@@ -95,11 +165,59 @@ public class ReactDrawableGroup extends ReactDrawable {
     mID = builder.view;
     mBaseDrawable = builder.base;
     mDrawables = builder.children;
+    if (mBaseDrawable != null) {
+      mBaseDrawable.setCallback(this);
+    }
+    for (Map.Entry<View, ReactDrawableGroup> dr : mDrawables.entrySet()) {
+      dr.getValue().setCallback(this);
+    }
+  }
+/*
+  @Override
+  protected boolean onLevelChange(int level) {
+    boolean changed = false;
+    if (mBaseDrawable != null) {
+      changed = mBaseDrawable.setLevel(level);
+    }
+    for (Map.Entry<View, ReactDrawableGroup> dr : mDrawables.entrySet()) {
+      if (dr.getValue().setLevel(level)) {
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   @Override
+  public void jumpToCurrentState() {
+    if (mBaseDrawable != null) {
+      mBaseDrawable.jumpToCurrentState();
+    }
+    for (Map.Entry<View, ReactDrawableGroup> dr : mDrawables.entrySet()) {
+      dr.getValue().jumpToCurrentState();
+    }
+  }
+
+  @Override
+  protected boolean onStateChange(int[] state) {
+    boolean changed = false;
+    if (mBaseDrawable != null) {
+      changed = mBaseDrawable.setState(state);
+    }
+    for (Map.Entry<View, ReactDrawableGroup> dr : mDrawables.entrySet()) {
+      if (dr.getValue().setState(state)) {
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+ */
+
+  @Override
   protected void onBoundsChange(Rect bounds) {
-    mBaseDrawable.setBounds(bounds);
+    if (mBaseDrawable != null) {
+      mBaseDrawable.setBounds(bounds);
+    }
   }
 
   @Override
@@ -113,7 +231,9 @@ public class ReactDrawableGroup extends ReactDrawable {
 
   private void drawBackground(Canvas canvas) {
     canvas.save();
-    mBaseDrawable.draw(canvas);
+    if (mBaseDrawable != null) {
+      mBaseDrawable.draw(canvas);
+    }
     canvas.restore();
   }
 
@@ -128,10 +248,54 @@ public class ReactDrawableGroup extends ReactDrawable {
     }
   }
 
+  private void setBase(View view) {
+    mID = view;
+    mBaseDrawable = Builder.createBaseDrawable(view.getResources(), view);
+    /*
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setDrawable(0, mBaseDrawable);
+    } else {
+      // needs layout
+    }
+
+     */
+  }
+
+  private ReactDrawableGroup addView(View view) {
+    ReactDrawableGroup target = new Builder(view.getResources(), view).get(false);
+    mDrawables.put(view, target);
+    //int index = ((ViewGroup) mID).indexOfChild(view);
+/*
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setDrawable(index, target);
+    } else {
+      // needs layout
+    }
+
+ */
+
+    return target;
+  }
+
+  private void removeView(View view) {
+    ReactDrawableGroup target = mDrawables.remove(view);
+    //int index = ((ViewGroup) mID).indexOfChild(view);
+/*
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setDrawable(index, target);
+    } else {
+      target.setVisible(false, false);
+    }
+
+
+ */
+
+  }
+
   static class Builder {
 
     View view;
-    Drawable base;
+    @Nullable Drawable base;
     HashMap<View, ReactDrawableGroup> children;
     DrawableHandler handler;
 
@@ -148,7 +312,9 @@ public class ReactDrawableGroup extends ReactDrawable {
 
     Drawable[] getLayers() {
       ArrayList<Drawable> layers = new ArrayList<>();
-      layers.add(base);
+      if (base != null) {
+        layers.add(base);
+      }
       for (Map.Entry<View, ReactDrawableGroup> next : children.entrySet()) {
         layers.add(next.getValue());
       }
@@ -186,10 +352,14 @@ public class ReactDrawableGroup extends ReactDrawable {
     private static Drawable createBaseDrawable(Resources res, View view) {
       Rect src = new Rect();
       view.getDrawingRect(src);
-      Bitmap bitmap = Bitmap.createBitmap(src.width(), src.height(), Bitmap.Config.ARGB_8888);
-      Canvas canvas = new Canvas(bitmap);
-      drawBareView(canvas, view);
-      return new BitmapDrawable(res, bitmap);
+      if (src.width() == 0 || src.height() == 0) {
+        return null;
+      } else {
+        Bitmap bitmap = Bitmap.createBitmap(src.width(), src.height(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawBareView(canvas, view);
+        return new BitmapDrawable(res, bitmap);
+      }
     }
 
     private static void drawBareView(Canvas canvas, View view) {

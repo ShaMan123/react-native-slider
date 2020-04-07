@@ -60,11 +60,6 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
     mHelper = new ReactDrawable.ReactDrawableHelper(this);
   }
 
-  @Override
-  Drawable createDrawable(Resources res, Bitmap bitmap) {
-    return mHelper.createDrawable(new BitmapDrawable(res, bitmap));
-  }
-
   private static void refresh(Drawable drawable) {
     drawable.setState(new int[]{});
     drawable.jumpToCurrentState();
@@ -87,6 +82,7 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
     return new Rect(0, 0, mSlider.getWidth(), mSlider.getHeight());
   }
 
+  @Override
   void onPreDraw(Canvas canvas) {
     View view = getView();
     RectF bounds = new RectF(getBounds());
@@ -97,12 +93,6 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
     canvas.scale(scale.x, scale.y);
   }
 
-  @Override
-  public void draw(Canvas canvas, View view) {
-    onPreDraw(canvas);
-    view.draw(canvas);
-  }
-
   static abstract class ProgressDrawableHelper implements DrawableHelper {
     private final boolean mIsSecondary;
 
@@ -111,7 +101,7 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
     }
 
     private float getScale() {
-      float mLevelScale = get().getLevel() * 1.f / ReactSliderDrawableHelper.MAX_LEVEL * 1.f;
+      float mLevelScale = get().getLevel() * 1.f / MAX_LEVEL * 1.f;
       if (mIsSecondary) mLevelScale = 1 - mLevelScale;
       return mLevelScale;
     }
@@ -200,13 +190,6 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
       return progressDrawable.findDrawableByLayerId(mLayerID);
     }
 
-    @Nullable
-    @Override
-    ReactDrawable getReactDrawable() {
-      return (ReactDrawable) get();
-      //return (ReactDrawable) ((LayerDrawable) get()).getDrawable(0);
-    }
-
     @Override
     public void set(Drawable drawable) {
       LayerDrawable outDrawable = (LayerDrawable) mSlider.getProgressDrawable().getCurrent();
@@ -217,10 +200,10 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
     }
 
     @Override
-    Drawable createDrawable(Resources res, Bitmap bitmap) {
-      return mHelper.createDrawable(new ProgressBitmapDrawable(new BitmapDrawable(res, bitmap), mLayerID == DRAWABLE_ID2));
+    Drawable createDrawable() {
+//      return mHelper.createDrawable(new ProgressBitmapDrawable(new BitmapDrawable(res, bitmap), mLayerID == DRAWABLE_ID2));
       // TODO: 06/04/2020 switch to ReactDrawableGroup, requires handling view addition/removal + drawing -> 60fps
-/*
+
       ReactDrawableGroup.Builder builder = new ReactDrawableGroup.Builder(this);
       return new ReactDrawableGroup.ReactRootDrawableGroup(builder) {
         @Override
@@ -241,8 +224,6 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
         }
       };
 
-
- */
     }
   }
 
@@ -274,6 +255,24 @@ abstract class ProgressDrawableHandler extends DrawableHandler {
       LayerDrawable outDrawable = (LayerDrawable) mSlider.getProgressDrawable().getCurrent();
       outDrawable.setDrawableByLayerId(DRAWABLE_ID, drawable);
       refresh(outDrawable);
+    }
+
+    @Override
+    Drawable createDrawable() {
+      ReactDrawableGroup.Builder builder = new ReactDrawableGroup.Builder(this);
+      return new ReactDrawableGroup.ReactRootDrawableGroup(builder) {
+
+        @Override
+        public void transformBounds(Rect bounds) {
+          bounds.set(0, 0, bounds.width(), BackgroundDrawableHandler.this.getBarHeight(bounds));
+        }
+
+        @Override
+        void onPreDraw(Canvas canvas) {
+          BackgroundDrawableHandler.this.onPreDraw(canvas);
+          super.onPreDraw(canvas);
+        }
+      };
     }
   }
 }
