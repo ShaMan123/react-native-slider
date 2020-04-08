@@ -27,6 +27,7 @@ public class ReactSliderPackage implements ReactPackage {
         final ReactInformantViewManager.InformantRegistry informantRegistry =
             new ReactInformantViewManager.InformantRegistry(reactContext, true);
         return Arrays.<ViewManager>asList(
+            new ReactSliderGroupManager(),
             new ReactSliderManager(informantRegistry),
             new ReactInformantViewManager(informantRegistry));
     }

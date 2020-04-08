@@ -11,8 +11,9 @@
 'use strict';
 
 import React from 'react';
-import {Image, Platform, StyleSheet} from 'react-native';
+import {Image, Platform, StyleSheet, View} from 'react-native';
 import RCTSliderNativeComponent from './RNCSliderNativeComponent';
+import RCTSliderContainerNativeComponent from './‏‏RNCSliderContainerNativeComponent';
 import { useViewProp } from './hooks';
 
 import type {Ref} from 'react';
@@ -228,6 +229,7 @@ const SliderComponent = (
     maximumTrack,
     thumb,
     debug,
+    style: s,
     ...localProps
   } = props;
 
@@ -264,16 +266,12 @@ const SliderComponent = (
   const thumbView = useViewProp(thumb, 'thumbViewTag', ref, debug);
 
   return (
-    <>
-      {backTrackView}
-      {minTrackView}
-      {maxTrackView}
-      {thumbView}
+    <RCTSliderContainerNativeComponent inverted={localProps.inverted} style={localProps.style}>
       <RCTSliderNativeComponent
         {...localProps}
         ref={ref}
         thumbImage={Image.resolveAssetSource(props.thumbImage)}
-        style={style}
+        style={styles.slider}
         onChange={onChangeEvent}
         onRNCSliderSlidingStart={onSlidingStartEvent}
         onRNCSliderSlidingComplete={onSlidingCompleteEvent}
@@ -281,10 +279,17 @@ const SliderComponent = (
         enabled={!props.disabled}
         onStartShouldSetResponder={() => true}
         onResponderTerminationRequest={() => false}
+        inverted={false}
       />
-    </>
+      <Wrapper>{backTrackView}</Wrapper>
+      <Wrapper>{maxTrackView}</Wrapper>
+      <Wrapper>{minTrackView}</Wrapper>
+      <Wrapper>{thumbView}</Wrapper>
+    </RCTSliderContainerNativeComponent>
   );
 };
+
+const Wrapper = ({ children }) => <View style={StyleSheet.absoluteFill} collapsable={false} pointerEvents="none">{children}</View>
 
 const SliderWithRef = React.forwardRef(SliderComponent);
 

@@ -12,6 +12,7 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.Property;
@@ -52,8 +53,9 @@ public class ThumbDrawableHandler extends DrawableHandler {
   }
 
   @Override
-  Drawable createDrawable(Resources res, Bitmap bitmap) {
-    return mHelper.createDrawable(createFromBitmap(bitmap));
+  Drawable createDrawable() {
+    return new ColorDrawable(Color.BLACK);
+    //return mHelper.createDrawable(createFromBitmap(bitmap));
 /*
     ReactDrawableGroup.Builder builder = new ReactDrawableGroup.Builder(this);
     return new ReactDrawableGroup.ReactRootDrawableGroup(builder) {
@@ -83,16 +85,6 @@ public class ThumbDrawableHandler extends DrawableHandler {
   @Override
   public Drawable get() {
     return mSlider.getThumb();
-  }
-
-  @Nullable
-  @Override
-  ReactDrawable getReactDrawable() {
-    if (get() instanceof ReactDrawable) {
-      return ((ReactDrawable) get());
-    } else {
-      return null;
-    }
   }
 
   @Override
@@ -162,12 +154,6 @@ public class ThumbDrawableHandler extends DrawableHandler {
     canvas.scale(scaler.x, scaler.y);
     // draw
     canvas.drawPaint(mPaint);
-  }
-
-  @Override
-  void draw(Canvas canvas, View view) {
-    onPreDraw(canvas);
-    view.draw(canvas);
   }
 
   @Override

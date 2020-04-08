@@ -3,20 +3,26 @@ package com.reactnativecommunity.slider.drawables;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.IntDef;
 
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.uimanager.ReactStylesDiffMap;
+import com.reactnativecommunity.slider.R;
 import com.reactnativecommunity.slider.ReactInformantViewManager;
 import com.reactnativecommunity.slider.ReactSlider;
+import com.reactnativecommunity.slider.ReactSliderViewGroup;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -43,19 +49,29 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
   }
 
   private final ReactSlider mSlider;
-  private final ProgressDrawableHandler.ForegroundDrawableHandler mMinimumTrackDrawableHandler;
-  private final ProgressDrawableHandler.ForegroundDrawableHandler mMaximumTrackDrawableHandler;
-  private final ProgressDrawableHandler.BackgroundDrawableHandler mBackgroundDrawableHandler;
-  private final ThumbDrawableHandler mThumbDrawableHandler;
 
   public ReactSliderDrawableHelper(ReactSlider slider) {
     mSlider = slider;
     setViewBackgroundDrawable();
-    ProgressDrawableHandler.init(slider);
-    mMinimumTrackDrawableHandler = new ProgressDrawableHandler.MinimumTrackHandler(mSlider);
-    mMaximumTrackDrawableHandler = new ProgressDrawableHandler.MaximumTrackHandler(mSlider);
-    mBackgroundDrawableHandler = new ProgressDrawableHandler.BackgroundDrawableHandler(mSlider);
-    mThumbDrawableHandler = new ThumbDrawableHandler(mSlider);
+    LayerDrawable outDrawable = (LayerDrawable) slider.getProgressDrawable().getCurrent().mutate();
+    LayerDrawable progressDrawable = ((LayerDrawable) slider.getResources().getDrawable(R.drawable.progress_layer).mutate());
+
+    outDrawable.setDrawableByLayerId(ProgressDrawableHandler.ForegroundDrawableHandler.DRAWABLE_ID, new ColorDrawable(Color.TRANSPARENT) {
+      @Override
+      protected boolean onLevelChange(int level) {
+        Log.d("Sliderr", "onLevelChange: " + level);
+        if (mSlider.getParent() instanceof ReactSliderViewGroup) ((ReactSliderViewGroup) mSlider.getParent()).setLevel(level);
+        return super.onLevelChange(level);
+      }
+
+      @Override
+      protected void onBoundsChange(Rect bounds) {
+        super.onBoundsChange(bounds);
+        if (mSlider.getParent() instanceof ReactSliderViewGroup) ((ReactSliderViewGroup) mSlider.getParent()).setBounds(bounds);
+      }
+    });
+    outDrawable.setDrawableByLayerId(ProgressDrawableHandler.BackgroundDrawableHandler.DRAWABLE_ID, new ColorDrawable(Color.TRANSPARENT));
+    slider.setProgressDrawable(outDrawable);
   }
 
   /**
@@ -83,6 +99,7 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
   }
 
   public void setInverted(boolean inverted) {
+    /*
     DrawableHandler[] handlers = new DrawableHandler[]{
         mBackgroundDrawableHandler,
         mMinimumTrackDrawableHandler,
@@ -91,13 +108,16 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
     for (DrawableHandler handler: handlers) {
       handler.setInverted(inverted);
     }
+
+     */
   }
 
   public void setThumbImage(final String uri) {
-    mThumbDrawableHandler.setThumbImage(uri);
+    //mThumbDrawableHandler.setThumbImage(uri);
   }
 
   public DrawableHandler getDrawableHandler(@SliderDrawable int type) {
+    /*
     switch (type) {
       case SliderDrawable.BACKGROUND:
         return mBackgroundDrawableHandler;
@@ -110,14 +130,38 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
       default:
         throw new Error("bad drawable type");
     }
+
+     */
+    return new DrawableHandler(((ReactContext) mSlider.getContext()),mSlider.getBackground()) {
+      @Override
+      Drawable createDrawable() {
+        return get();
+      }
+
+      @Override
+      Drawable get() {
+        return new ColorDrawable(Color.MAGENTA);
+      }
+
+      @Override
+      void set(Drawable drawable) {
+
+      }
+
+      @Override
+      void onPreDraw(Canvas canvas) {
+
+      }
+    };
   }
 
   public void onTouchEvent(MotionEvent event) {
-    mThumbDrawableHandler.onTouchEvent(event);
+   // mThumbDrawableHandler.onTouchEvent(event);
   }
 
   @Override
   public void onReceiveProps(int recruiterID, View informant, ReactStylesDiffMap context) {
+    /*
     DrawableHandler[] handlers = new DrawableHandler[]{
         mBackgroundDrawableHandler,
         mMinimumTrackDrawableHandler,
@@ -137,6 +181,8 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
         }
       }
     }
+
+     */
   }
 
   @Override
@@ -164,6 +210,7 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
   }
 
   private DrawableHandler findHandler(int informantID) {
+    /*
     DrawableHandler[] handlers = new DrawableHandler[]{
         mBackgroundDrawableHandler,
         mMinimumTrackDrawableHandler,
@@ -175,14 +222,19 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
         return handler;
       }
     }
+
+     */
     return null;
   }
 
   public void tearDown() {
+    /*
     mMinimumTrackDrawableHandler.tearDown();
     mMaximumTrackDrawableHandler.tearDown();
     mBackgroundDrawableHandler.tearDown();
     mThumbDrawableHandler.tearDown();
+
+     */
   }
 
   static Bitmap getBitmap(final View view, final String uri) {
