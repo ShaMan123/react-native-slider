@@ -5,9 +5,8 @@ import androidx.annotation.NonNull;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
-import com.facebook.react.views.view.ReactViewManager;
 
-public class ReactSliderGroupManager extends ViewGroupManager<ReactSliderViewGroup> {
+public class ReactSliderContainerManager extends ViewGroupManager<ReactSliderContainer> {
   private final static String REACT_CLASS = "RNCSliderContainer";
 
   @NonNull
@@ -18,12 +17,12 @@ public class ReactSliderGroupManager extends ViewGroupManager<ReactSliderViewGro
 
   @NonNull
   @Override
-  protected ReactSliderViewGroup createViewInstance(@NonNull ThemedReactContext reactContext) {
-    return new ReactSliderViewGroup(reactContext);
+  protected ReactSliderContainer createViewInstance(@NonNull ThemedReactContext reactContext) {
+    return new ReactSliderContainer(reactContext);
   }
 
   @ReactProp(name = "inverted", defaultBoolean = false)
-  public void setInverted(ReactSliderViewGroup view, boolean inverted) {
+  public void setInverted(ReactSliderContainer view, boolean inverted) {
     view.setInverted(inverted);
   }
 

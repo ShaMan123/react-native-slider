@@ -1,9 +1,8 @@
-package com.reactnativecommunity.slider.drawables;
+package com.reactnativecommunity.slider;
 
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -13,16 +12,8 @@ import android.graphics.drawable.RippleDrawable;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.annotation.IntDef;
-
-import com.facebook.react.bridge.ReactContext;
-import com.facebook.react.uimanager.ReactStylesDiffMap;
-import com.reactnativecommunity.slider.R;
-import com.reactnativecommunity.slider.ReactInformantViewManager;
-import com.reactnativecommunity.slider.ReactSlider;
-import com.reactnativecommunity.slider.ReactSliderViewGroup;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -32,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class ReactSliderDrawableHelper implements ReactInformantViewManager.InformantRegistry.InformantTarget {
+public class ReactSliderDrawableHelper {
 
   @IntDef({
       SliderDrawable.BACKGROUND,
@@ -54,23 +45,25 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
     mSlider = slider;
     setViewBackgroundDrawable();
     LayerDrawable outDrawable = (LayerDrawable) slider.getProgressDrawable().getCurrent().mutate();
-    LayerDrawable progressDrawable = ((LayerDrawable) slider.getResources().getDrawable(R.drawable.progress_layer).mutate());
 
-    outDrawable.setDrawableByLayerId(ProgressDrawableHandler.ForegroundDrawableHandler.DRAWABLE_ID, new ColorDrawable(Color.TRANSPARENT) {
+    outDrawable.setDrawableByLayerId(android.R.id.progress, new ColorDrawable(Color.TRANSPARENT) {
       @Override
       protected boolean onLevelChange(int level) {
-        Log.d("Sliderr", "onLevelChange: " + level);
-        if (mSlider.getParent() instanceof ReactSliderViewGroup) ((ReactSliderViewGroup) mSlider.getParent()).setLevel(level);
+        if (mSlider.getParent() instanceof ReactSliderContainer) {
+          ((ReactSliderContainer) mSlider.getParent()).setLevel(level);
+        }
         return super.onLevelChange(level);
       }
 
       @Override
       protected void onBoundsChange(Rect bounds) {
         super.onBoundsChange(bounds);
-        if (mSlider.getParent() instanceof ReactSliderViewGroup) ((ReactSliderViewGroup) mSlider.getParent()).setBounds(bounds);
+        if (mSlider.getParent() instanceof ReactSliderContainer) {
+          ((ReactSliderContainer) mSlider.getParent()).setBounds(bounds);
+        }
       }
     });
-    outDrawable.setDrawableByLayerId(ProgressDrawableHandler.BackgroundDrawableHandler.DRAWABLE_ID, new ColorDrawable(Color.TRANSPARENT));
+    outDrawable.setDrawableByLayerId(android.R.id.background, new ColorDrawable(Color.TRANSPARENT));
     slider.setProgressDrawable(outDrawable);
   }
 
@@ -116,115 +109,9 @@ public class ReactSliderDrawableHelper implements ReactInformantViewManager.Info
     //mThumbDrawableHandler.setThumbImage(uri);
   }
 
-  public DrawableHandler getDrawableHandler(@SliderDrawable int type) {
-    /*
-    switch (type) {
-      case SliderDrawable.BACKGROUND:
-        return mBackgroundDrawableHandler;
-      case SliderDrawable.MAXIMUM_TRACK:
-        return mMaximumTrackDrawableHandler;
-      case SliderDrawable.MINIMUM_TRACK:
-        return mMinimumTrackDrawableHandler;
-      case SliderDrawable.THUMB:
-        return mThumbDrawableHandler;
-      default:
-        throw new Error("bad drawable type");
-    }
-
-     */
-    return new DrawableHandler(((ReactContext) mSlider.getContext()),mSlider.getBackground()) {
-      @Override
-      Drawable createDrawable() {
-        return get();
-      }
-
-      @Override
-      Drawable get() {
-        return new ColorDrawable(Color.MAGENTA);
-      }
-
-      @Override
-      void set(Drawable drawable) {
-
-      }
-
-      @Override
-      void onPreDraw(Canvas canvas) {
-
-      }
-    };
-  }
 
   public void onTouchEvent(MotionEvent event) {
    // mThumbDrawableHandler.onTouchEvent(event);
-  }
-
-  @Override
-  public void onReceiveProps(int recruiterID, View informant, ReactStylesDiffMap context) {
-    /*
-    DrawableHandler[] handlers = new DrawableHandler[]{
-        mBackgroundDrawableHandler,
-        mMinimumTrackDrawableHandler,
-        mMaximumTrackDrawableHandler,
-        mThumbDrawableHandler};
-    for (DrawableHandler handler: handlers) {
-      int id = handler.getView() != null ? handler.getView().getId() : View.NO_ID;
-      if (id != View.NO_ID) {
-        if (id == informant.getId()) {
-          handler.updateFromProps(0, context);
-          //break;
-        }
-        if (id == recruiterID) {
-          handler.updateFromProps(informant.getId(), context);
-          //handler.dispatchDraw();
-          break;
-        }
-      }
-    }
-
-     */
-  }
-
-  @Override
-  public void onViewAdded(int recruiterID, ViewGroup parent, View view) {
-    DrawableHandler drawableHandler = findHandler(recruiterID);
-    if (drawableHandler != null) {
-      drawableHandler.onViewAdded(parent, view);
-    }
-  }
-
-  @Override
-  public void onViewRemoved(int recruiterID, ViewGroup parent, View view) {
-    DrawableHandler drawableHandler = findHandler(recruiterID);
-    if (drawableHandler != null) {
-      drawableHandler.onViewRemoved(parent, view);
-    }
-  }
-
-  @Override
-  public void onViewInvalidated(int recruiterID, View view) {
-    DrawableHandler drawableHandler = findHandler(recruiterID);
-    if (drawableHandler != null) {
-      drawableHandler.onViewInvalidated(view);
-    }
-  }
-
-  private DrawableHandler findHandler(int informantID) {
-    /*
-    DrawableHandler[] handlers = new DrawableHandler[]{
-        mBackgroundDrawableHandler,
-        mMinimumTrackDrawableHandler,
-        mMaximumTrackDrawableHandler,
-        mThumbDrawableHandler};
-    for (DrawableHandler handler: handlers) {
-      int id = handler.getView() != null ? handler.getView().getId() : View.NO_ID;
-      if (id == informantID) {
-        return handler;
-      }
-    }
-
-     */
-    return null;
   }
 
   public void tearDown() {

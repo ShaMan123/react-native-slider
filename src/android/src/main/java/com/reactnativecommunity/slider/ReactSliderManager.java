@@ -25,9 +25,7 @@ import com.facebook.yoga.YogaMeasureFunction;
 import com.facebook.yoga.YogaMeasureMode;
 import com.facebook.yoga.YogaMeasureOutput;
 import com.facebook.yoga.YogaNode;
-import com.reactnativecommunity.slider.ReactInformantViewManager.InformantRegistry;
-import com.reactnativecommunity.slider.drawables.ReactSliderDrawableHelper.SliderDrawable;
-import com.reactnativecommunity.slider.drawables.DrawableHandler;
+import com.reactnativecommunity.slider.ReactSliderDrawableHelper.SliderDrawable;
 
 import java.util.Map;
 
@@ -113,36 +111,8 @@ public class ReactSliderManager extends SimpleViewManager<ReactSlider> {
         }
       };
 
-  private final InformantRegistry mInformantRegistry;
-
-  ReactSliderManager(InformantRegistry registry) {
-    super();
-    mInformantRegistry = registry;
-  }
-
-  private DrawableHandler getDrawableHandler(ReactSlider view, @SliderDrawable int type) {
-    return view.drawableHelper.getDrawableHandler(type);
-  }
-
-  private void handleRegistration(ReactSlider receiver, Integer informantTag, @SliderDrawable int type) {
-    if (informantTag != null) {
-      mInformantRegistry.add(receiver, informantTag, true);
-    } else {
-      DrawableHandler handler = getDrawableHandler(receiver, type);
-      View informant = handler.getView();
-      if (informant != null) {
-        mInformantRegistry.remove(informant);
-      }
-    }
-  }
-
-  private void registerView(ReactSlider view, Integer tag, @SliderDrawable int type) {
-    getDrawableHandler(view, type).setView(tag == null ? -1 : tag);
-    handleRegistration(view, tag, type);
-  }
-
   private void setTintColor(ReactSlider view, Integer color, @SliderDrawable int type) {
-    getDrawableHandler(view, type).setTintColor(color);
+
   }
 
   @Override
@@ -212,11 +182,6 @@ public class ReactSliderManager extends SimpleViewManager<ReactSlider> {
     setTintColor(view, color, SliderDrawable.THUMB);
   }
 
-  @ReactProp(name = "thumbViewTag")
-  public void setThumbView(ReactSlider view, Integer tag) {
-    registerView(view, tag, SliderDrawable.THUMB);
-  }
-
   @ReactProp(name = "thumbImage")
   public void setThumbImage(ReactSlider view, @Nullable ReadableMap source) {
     String uri = null;
@@ -231,29 +196,14 @@ public class ReactSliderManager extends SimpleViewManager<ReactSlider> {
     setTintColor(view, color, SliderDrawable.MINIMUM_TRACK);
   }
 
-  @ReactProp(name = "minimumTrackViewTag")
-  public void setMinimumTrackView(ReactSlider view, Integer tag) {
-    registerView(view, tag, SliderDrawable.MINIMUM_TRACK);
-  }
-
   @ReactProp(name = "maximumTrackTintColor", customType = "Color")
   public void setMaximumTrackTintColor(ReactSlider view, Integer color) {
     setTintColor(view, color, SliderDrawable.MAXIMUM_TRACK);
   }
 
-  @ReactProp(name = "maximumTrackViewTag")
-  public void setMaximumTrackView(ReactSlider view, Integer tag) {
-    registerView(view, tag, SliderDrawable.MAXIMUM_TRACK);
-  }
-
   @ReactProp(name = "backgroundTrackTintColor", customType = "Color")
   public void setBackgroundTrackTintColor(ReactSlider view, Integer color) {
     setTintColor(view, color, SliderDrawable.BACKGROUND);
-  }
-
-  @ReactProp(name = "backgroundTrackViewTag")
-  public void setBackgroundTrackView(ReactSlider view, Integer tag) {
-    registerView(view, tag, SliderDrawable.BACKGROUND);
   }
 
   @ReactProp(name = "inverted", defaultBoolean = false)
